@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syllabai.curriculum.CurriculumScopeResolver;
 import com.syllabai.identity.CurrentUserId;
 import com.syllabai.shared.NotFoundException;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
@@ -48,15 +49,19 @@ public class ContentDocumentController {
         this.curriculumScopes = curriculumScopes;
     }
 
-    /** ingest a syllabai-parser canonical document (schema 1.0) — chunks land un-embedded */
+    /**
+     * ingest a syllabai-parser canonical document (schema 1.0) — chunks land
+     * un-embedded. The canonical JSON is carried as a named field and stored
+     * verbatim (content-preserving JSONB, checksum-pinned per §8).
+     */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public IngestionView ingest(@CurrentUserId UUID ingestedBy,
                                 @RequestParam(defaultValue = "OTHER") Document.Kind kind,
-                                @RequestBody String rawJson) {
-        CanonicalDocumentDto doc = parse(rawJson);
-        ContentIngestionService.IngestionResult result = ingestion.ingest(doc, rawJson, kind,
-                ingestedBy);
+                                @Valid @RequestBody IngestRequest request) {
+        CanonicalDocumentDto doc = parse(request.documentJson());
+        ContentIngestionService.IngestionResult result = ingestion.ingest(doc,
+                request.documentJson(), kind, ingestedBy);
         return new IngestionView(result.id(), result.documentId(), result.duplicate(),
                 result.chunks(), result.elements(), result.pages(), kind.name());
     }
@@ -85,7 +90,7 @@ public class ContentDocumentController {
 
     /** embed all pending chunks — idempotent, resumable, no failover by design */
     @PostMapping("/{id}/embed")
-    public EmbeddingView embed(@PathVariable UUID id) {
+    public EmbeddingView embed(@PathVariable UUID id, @RequestBody EmbedRequest request) {
         DocumentEmbeddingService.EmbeddingResult result = embedding.embedDocument(id);
         return new EmbeddingView(result.documentRowId(), result.documentId(), result.model(),
                 result.embedded(), result.skipped(), result.totalChunks());
@@ -154,5 +159,18 @@ public class ContentDocumentController {
                     h.content(), h.pageStart(), h.pageEnd(), h.elementIds(),
                     h.embeddingModel(), h.score());
         }
+    }
+
+    // ── request objects ──────────────────────────────────────────────────────
+
+    /**
+     * @param documentJson the syllabai-parser canonical document JSON (schema 1.0),
+     *                     stored verbatim — the request envelope never reaches the store
+     */
+    public record IngestRequest(@NotBlank String documentJson) {
+    }
+
+    /** Empty request object — embedding needs only the document id (idempotent, resumable). */
+    public record EmbedRequest() {
     }
 }
