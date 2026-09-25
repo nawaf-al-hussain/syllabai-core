@@ -71,23 +71,27 @@ public class TeacherCurriculumController {
     }
 
     @PostMapping("/nodes/{id}/validate")
-    public CurriculumReviewService.NodeView validateNode(@PathVariable UUID id) {
+    public CurriculumReviewService.NodeView validateNode(@PathVariable UUID id,
+                                                         @Valid @RequestBody ValidateNodeRequest request) {
         return review.validateNode(id);
     }
 
     @PostMapping("/nodes/{id}/reject")
-    public CurriculumReviewService.NodeView rejectNode(@PathVariable UUID id) {
+    public CurriculumReviewService.NodeView rejectNode(@PathVariable UUID id,
+                                                       @Valid @RequestBody RejectNodeRequest request) {
         return review.rejectNode(id);
     }
 
     /** the version gate: ACTIVE only when the whole subject tree is VALIDATED */
     @PostMapping("/versions/{id}/validate")
-    public CurriculumReviewService.CurriculumOverview validateVersion(@PathVariable UUID id) {
+    public CurriculumReviewService.CurriculumOverview validateVersion(
+            @PathVariable UUID id, @Valid @RequestBody ValidateVersionRequest request) {
         return review.validateVersion(id);
     }
 
     @PostMapping("/versions/{id}/archive")
-    public CurriculumReviewService.CurriculumOverview archiveVersion(@PathVariable UUID id) {
+    public CurriculumReviewService.CurriculumOverview archiveVersion(
+            @PathVariable UUID id, @Valid @RequestBody ArchiveVersionRequest request) {
         return review.archiveVersion(id);
     }
 
@@ -103,5 +107,26 @@ public class TeacherCurriculumController {
     public record IngestionResultView(UUID curriculumVersionId, UUID subjectId,
                                       UUID subjectRootNodeId, int units, int topics,
                                       int subtopics, String validationState) {
+    }
+
+    // ── review-action request objects ─────────────────────────────────────
+    // The review actions carry no payload beyond the path id; the request
+    // objects are intentionally empty ({}) so every mutating endpoint keeps a
+    // typed POST body contract (validation/UX uniformity across the API).
+
+    /** Empty request object — node validation needs only the path id. */
+    public record ValidateNodeRequest() {
+    }
+
+    /** Empty request object — node rejection needs only the path id. */
+    public record RejectNodeRequest() {
+    }
+
+    /** Empty request object — version gating needs only the path id. */
+    public record ValidateVersionRequest() {
+    }
+
+    /** Empty request object — archiving needs only the path id. */
+    public record ArchiveVersionRequest() {
     }
 }
