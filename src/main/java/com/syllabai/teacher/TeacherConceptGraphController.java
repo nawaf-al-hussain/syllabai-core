@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -55,12 +56,19 @@ public class TeacherConceptGraphController {
     /**
      * Activates (or re-verifies) the 4CH1 curriculum + settled T-C11 concept
      * graph. Deterministic and idempotent: the input is the SHA-256-pinned
-     * snapshot; re-running reuses every canonical node and edge.
+     * snapshot; re-running reuses every canonical node and edge. The request
+     * object is intentionally empty ({@code {}}) — the snapshot identity is
+     * pinned server-side, not client-supplied.
      */
     @PostMapping("/activate")
     @ResponseStatus(HttpStatus.OK)
-    public ConceptGraphSeedService.SeedSummary activate(@CurrentUserId UUID activatedBy) {
+    public ConceptGraphSeedService.SeedSummary activate(@CurrentUserId UUID activatedBy,
+                                                        @RequestBody ActivateRequest request) {
         return seed.activate(activatedBy);
+    }
+
+    /** Empty request object — the activated snapshot is SHA-256-pinned server-side. */
+    public record ActivateRequest() {
     }
 
     /**
