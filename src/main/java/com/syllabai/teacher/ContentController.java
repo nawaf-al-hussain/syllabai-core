@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -169,13 +168,13 @@ public class ContentController {
      */
     @PostMapping("/exam-papers/{id}/validate-all")
     public ContentReviewService.BatchResult validateAll(@PathVariable UUID id,
-                                                        @RequestParam(required = false)
-                                                        Boolean force) {
-        return review.validateAllForPaper(id, Boolean.TRUE.equals(force));
+                                                        @Valid @RequestBody ValidateAllRequest request) {
+        return review.validateAllForPaper(id, Boolean.TRUE.equals(request.force()));
     }
 
     @PostMapping("/exam-papers/{id}/validate")
-    public PaperSummary validatePaper(@PathVariable UUID id) {
+    public PaperSummary validatePaper(@PathVariable UUID id,
+                                      @Valid @RequestBody ReviewActionRequest request) {
         return PaperSummary.from(review.validatePaper(id));
     }
 
@@ -191,41 +190,48 @@ public class ContentController {
     }
 
     @PostMapping("/exam-papers/{id}/reject")
-    public PaperSummary rejectPaper(@PathVariable UUID id) {
+    public PaperSummary rejectPaper(@PathVariable UUID id,
+                                    @Valid @RequestBody ReviewActionRequest request) {
         return PaperSummary.from(review.rejectPaper(id));
     }
 
     @PostMapping("/question-versions/{id}/validate")
-    public VersionSummary validateVersion(@PathVariable UUID id) {
+    public VersionSummary validateVersion(@PathVariable UUID id,
+                                          @Valid @RequestBody ReviewActionRequest request) {
         return VersionSummary.from(review.validateQuestionVersion(id));
     }
 
     @PostMapping("/question-versions/{id}/reject")
-    public VersionSummary rejectVersion(@PathVariable UUID id) {
+    public VersionSummary rejectVersion(@PathVariable UUID id,
+                                        @Valid @RequestBody ReviewActionRequest request) {
         return VersionSummary.from(review.rejectQuestionVersion(id));
     }
 
     /** V20: flag a question version (from SUGGESTED/VALIDATED — stops serving immediately) */
     @PostMapping("/question-versions/{id}/flag")
-    public VersionSummary flagVersion(@PathVariable UUID id) {
+    public VersionSummary flagVersion(@PathVariable UUID id,
+                                      @Valid @RequestBody ReviewActionRequest request) {
         return VersionSummary.from(review.flagQuestionVersion(id));
     }
 
     /** V20: unflag a question version (back to SUGGESTED — re-validation required) */
     @PostMapping("/question-versions/{id}/unflag")
-    public VersionSummary unflagVersion(@PathVariable UUID id) {
+    public VersionSummary unflagVersion(@PathVariable UUID id,
+                                        @Valid @RequestBody ReviewActionRequest request) {
         return VersionSummary.from(review.unflagQuestionVersion(id));
     }
 
     /** V20: flag the paper itself — blocks serving of everything under it */
     @PostMapping("/exam-papers/{id}/flag")
-    public PaperSummary flagPaper(@PathVariable UUID id) {
+    public PaperSummary flagPaper(@PathVariable UUID id,
+                                  @Valid @RequestBody ReviewActionRequest request) {
         return PaperSummary.from(review.flagPaper(id));
     }
 
     /** V20: unflag the paper (back to SUGGESTED) */
     @PostMapping("/exam-papers/{id}/unflag")
-    public PaperSummary unflagPaper(@PathVariable UUID id) {
+    public PaperSummary unflagPaper(@PathVariable UUID id,
+                                    @Valid @RequestBody ReviewActionRequest request) {
         return PaperSummary.from(review.unflagPaper(id));
     }
 
@@ -272,19 +278,22 @@ public class ContentController {
     }
 
     @PostMapping("/mark-schemes/{id}/reject")
-    public SchemeSummary rejectScheme(@PathVariable UUID id) {
+    public SchemeSummary rejectScheme(@PathVariable UUID id,
+                                      @Valid @RequestBody ReviewActionRequest request) {
         return SchemeSummary.from(review.rejectMarkScheme(id));
     }
 
     /** V20: flag a mark scheme (from SUGGESTED/VALIDATED) */
     @PostMapping("/mark-schemes/{id}/flag")
-    public SchemeSummary flagScheme(@PathVariable UUID id) {
+    public SchemeSummary flagScheme(@PathVariable UUID id,
+                                    @Valid @RequestBody ReviewActionRequest request) {
         return SchemeSummary.from(review.flagMarkScheme(id));
     }
 
     /** V20: unflag a mark scheme (back to SUGGESTED) */
     @PostMapping("/mark-schemes/{id}/unflag")
-    public SchemeSummary unflagScheme(@PathVariable UUID id) {
+    public SchemeSummary unflagScheme(@PathVariable UUID id,
+                                      @Valid @RequestBody ReviewActionRequest request) {
         return SchemeSummary.from(review.unflagMarkScheme(id));
     }
 
@@ -342,5 +351,24 @@ public class ContentController {
 
     /** §7 placement request: the target curriculum subject. */
     public record PlaceRequest(@NotNull UUID subjectId) {
+    }
+
+    /**
+     * V20 batch-validate request.
+     *
+     * @param force proceed past REJECTED/FLAGGED versions and REVIEW_REQUIRED
+     *              imports (default false — fail-closed)
+     */
+    public record ValidateAllRequest(Boolean force) {
+    }
+
+    // ── review-action request objects ─────────────────────────────────────
+    // The state-review actions carry no payload beyond the path id; the shared
+    // request object is intentionally empty ({}) so every mutating endpoint
+    // keeps a typed POST body contract (validation/UX uniformity across the
+    // API). Per-action records were rejected as ceremony without information.
+
+    /** Empty request object shared by the paper/version/scheme review actions. */
+    public record ReviewActionRequest() {
     }
 }
