@@ -4,6 +4,7 @@ import com.syllabai.identity.CurrentUserId;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,9 +28,11 @@ import org.springframework.web.bind.annotation.RestController;
  * The service re-verifies ownership against the authenticated caller, so
  * another learner's attempt id is a plain 404 — no existence leak.</p>
  *
- * <p>Button-driven, not a chat box: the feedback actions take no request body
- * — the grounding (question, answer, decisions) is resolved server-side from
- * opaque ids, exactly like the CLA contract's context resolution.</p>
+ * <p>Button-driven, not a chat box: the feedback actions carry no payload —
+ * the grounding (question, answer, decisions) is resolved server-side from
+ * opaque ids, exactly like the CLA contract's context resolution. Each action
+ * still takes a typed (empty) request object so every mutating endpoint keeps
+ * a uniform POST-body contract; send {@code {} }.</p>
  */
 @RestController
 @RequestMapping("/api/v1/learners/me/attempts")
@@ -44,7 +47,8 @@ public class StudentSmartMarkController {
     @PostMapping("/{attemptId}/smart-mark")
     public StudentSmartMarkViews.AttemptSmartMarkView smartMark(
             @CurrentUserId UUID learnerId,
-            @PathVariable UUID attemptId) {
+            @PathVariable UUID attemptId,
+            @RequestBody SmartMarkRequest request) {
         return studentSmartMark.smartMarkAttempt(learnerId, attemptId);
     }
 
@@ -52,7 +56,8 @@ public class StudentSmartMarkController {
     public StudentSmartMarkViews.FeedbackExplanationView explainFeedback(
             @CurrentUserId UUID learnerId,
             @PathVariable UUID attemptId,
-            @PathVariable UUID partId) {
+            @PathVariable UUID partId,
+            @RequestBody FeedbackExplanationRequest request) {
         return studentSmartMark.explainFeedback(learnerId, attemptId, partId);
     }
 
@@ -60,7 +65,25 @@ public class StudentSmartMarkController {
     public StudentSmartMarkViews.ImprovementPlanView improvementPlan(
             @CurrentUserId UUID learnerId,
             @PathVariable UUID attemptId,
-            @PathVariable UUID partId) {
+            @PathVariable UUID partId,
+            @RequestBody ImprovementPlanRequest request) {
         return studentSmartMark.improvementPlan(learnerId, attemptId, partId);
+    }
+
+    // ── request objects ──────────────────────────────────────────────────
+    // The learner actions carry no payload beyond the path ids (grounding is
+    // resolved server-side); the request objects are intentionally empty ({})
+    // so every mutating endpoint keeps a typed POST body contract.
+
+    /** Empty request object — smart-marking needs only the attempt id. */
+    public record SmartMarkRequest() {
+    }
+
+    /** Empty request object — feedback explanation needs only attempt + part ids. */
+    public record FeedbackExplanationRequest() {
+    }
+
+    /** Empty request object — the improvement plan needs only attempt + part ids. */
+    public record ImprovementPlanRequest() {
     }
 }
