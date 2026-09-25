@@ -81,4 +81,20 @@ public final class InterventionRunViews {
     /** Terminal outcome for completion (e.g. EVIDENCE_COLLECTED). */
     public record CompleteRequest(String terminalOutcome) {
     }
+
+    /** Create-from-NBA: the recommendation's root specification point. */
+    public record CreateFromRecommendationRequest(UUID rootId) {
+    }
+
+    /** Empty request object — activation is a pure state transition (no payload). */
+    public record ActivateRequest() {
+    }
+
+    /** Empty request object — pausing is a pure state transition (no payload). */
+    public record PauseRequest() {
+    }
+
+    /** Empty request object — cancellation is a pure state transition (no payload). */
+    public record CancelRequest() {
+    }
 }

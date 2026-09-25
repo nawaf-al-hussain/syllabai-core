@@ -259,7 +259,8 @@ class InterventionRunFlowIT {
         int attemptsBefore = before.attempts();
 
         // 4. ordered step observations + existing attempt evidence BY REFERENCE
-        controller.activate(learner, run.runId());
+        controller.activate(learner, run.runId(),
+                new com.syllabai.intervention.dto.InterventionRunViews.ActivateRequest());
         controller.recordStep(learner, run.runId(),
                 new com.syllabai.intervention.dto.InterventionRunViews.StepRequest(
                         "DONE", "PRACTICE_SUBMITTED", null,
@@ -332,8 +333,10 @@ class InterventionRunFlowIT {
         assertThat(skillStates.countByLearnerId(learner)).isZero();
 
         // resume gate: wrong identity fails closed, right identity resumes
-        controller.activate(learner, run.runId());
-        controller.pause(learner, run.runId());
+        controller.activate(learner, run.runId(),
+                new com.syllabai.intervention.dto.InterventionRunViews.ActivateRequest());
+        controller.pause(learner, run.runId(),
+                new com.syllabai.intervention.dto.InterventionRunViews.PauseRequest());
         String version = run.interventionVersion();
         String wrongHash = "0".repeat(64);
         // the NAMED mismatch reaches the boundary unchanged (the controller's

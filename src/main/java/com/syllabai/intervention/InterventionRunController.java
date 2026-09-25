@@ -1,8 +1,12 @@
 package com.syllabai.intervention;
 
 import com.syllabai.identity.CurrentUserId;
+import com.syllabai.intervention.dto.InterventionRunViews.ActivateRequest;
+import com.syllabai.intervention.dto.InterventionRunViews.CancelRequest;
 import com.syllabai.intervention.dto.InterventionRunViews.CompleteRequest;
+import com.syllabai.intervention.dto.InterventionRunViews.CreateFromRecommendationRequest;
 import com.syllabai.intervention.dto.InterventionRunViews.EvidenceRequest;
+import com.syllabai.intervention.dto.InterventionRunViews.PauseRequest;
 import com.syllabai.intervention.dto.InterventionRunViews.ResumeRequest;
 import com.syllabai.intervention.dto.InterventionRunViews.RunView;
 import com.syllabai.intervention.dto.InterventionRunViews.StepRequest;
@@ -19,7 +23,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -62,8 +65,12 @@ public class InterventionRunController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public RunView createFromRecommendation(@CurrentUserId UUID learnerId,
-                                            @RequestParam UUID rootId) {
-        return inStateConflictTerms(() -> view(scenario.createFromRecommendation(learnerId, rootId),
+                                            @RequestBody CreateFromRecommendationRequest request) {
+        if (request.rootId() == null) {
+            throw new BadRequestException("rootId is required");
+        }
+        return inStateConflictTerms(() -> view(
+                scenario.createFromRecommendation(learnerId, request.rootId()),
                 List.of(), List.of()));
     }
 
@@ -75,13 +82,15 @@ public class InterventionRunController {
     }
 
     @PostMapping("/{runId}/activate")
-    public RunView activate(@CurrentUserId UUID learnerId, @PathVariable UUID runId) {
+    public RunView activate(@CurrentUserId UUID learnerId, @PathVariable UUID runId,
+                            @RequestBody ActivateRequest request) {
         ownedRun(learnerId, runId);
         return inStateConflictTerms(() -> view(runs.activate(runId)));
     }
 
     @PostMapping("/{runId}/pause")
-    public RunView pause(@CurrentUserId UUID learnerId, @PathVariable UUID runId) {
+    public RunView pause(@CurrentUserId UUID learnerId, @PathVariable UUID runId,
+                         @RequestBody PauseRequest request) {
         ownedRun(learnerId, runId);
         return inStateConflictTerms(() -> view(runs.pause(runId)));
     }
@@ -137,7 +146,8 @@ public class InterventionRunController {
     }
 
     @PostMapping("/{runId}/cancel")
-    public RunView cancel(@CurrentUserId UUID learnerId, @PathVariable UUID runId) {
+    public RunView cancel(@CurrentUserId UUID learnerId, @PathVariable UUID runId,
+                          @RequestBody CancelRequest request) {
         ownedRun(learnerId, runId);
         return inStateConflictTerms(() -> view(runs.cancel(runId)));
     }
