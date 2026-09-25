@@ -153,9 +153,14 @@ public class TeacherMarkingController {
         return TeacherViews.answer(answer, learnerName, smart, human);
     }
 
-    /** run the Smart Mark pipeline once against one answer (append-only history) */
+    /**
+     * run the Smart Mark pipeline once against one answer (append-only history).
+     * The answer id alone fully identifies the work item — the request object is
+     * intentionally empty ({@code {}}) and carries no payload.
+     */
     @PostMapping("/answers/{id}/smart-mark")
-    public TeacherViews.SmartMarkView smartMark(@PathVariable UUID id) {
+    public TeacherViews.SmartMarkView smartMark(@PathVariable UUID id,
+                                                @Valid @RequestBody SmartMarkAnswerRequest request) {
         SmartMarkResult result = smartMarkService.markAnswer(id);
         return TeacherViews.SmartMarkView.from(result);
     }
@@ -206,6 +211,10 @@ public class TeacherMarkingController {
     }
 
     public record KappaScopeRequest(UUID paperId) {
+    }
+
+    /** Empty request object — the path id fully identifies the answer to mark. */
+    public record SmartMarkAnswerRequest() {
     }
 
     /** display names for the queue read model; unknown ids resolve to null */
